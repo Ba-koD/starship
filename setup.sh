@@ -67,7 +67,7 @@ echo ""
 # STEP 1: Package manager setup
 # ============================================
 echo ""
-echo "[1/10] Setting up package manager..."
+echo "[1/12] Setting up package manager..."
 if [[ "$OS" == "macos" ]]; then
     if ! command -v brew &> /dev/null; then
         /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
@@ -88,7 +88,7 @@ fi
 # STEP 2: Install FiraCode Nerd Font
 # ============================================
 echo ""
-echo "[2/10] Installing FiraCode Nerd Font..."
+echo "[2/12] Installing FiraCode Nerd Font..."
 if [[ "$OS" == "macos" ]]; then
     if ! brew list font-fira-code-nerd-font &> /dev/null 2>&1; then
         brew tap homebrew/cask-fonts 2>/dev/null || true
@@ -114,7 +114,7 @@ fi
 # STEP 3: Install Alacritty (macOS only)
 # ============================================
 echo ""
-echo "[3/10] Installing Alacritty..."
+echo "[3/12] Installing Alacritty..."
 if [[ "$OS" == "macos" ]]; then
     if ! brew list --cask alacritty &> /dev/null 2>&1; then
         brew install --cask alacritty
@@ -129,7 +129,7 @@ fi
 # STEP 4: Configure Alacritty (macOS only)
 # ============================================
 echo ""
-echo "[4/10] Configuring Alacritty..."
+echo "[4/12] Configuring Alacritty..."
 if [[ "$OS" == "macos" ]]; then
     ALACRITTY_DIR="$HOME/.config/alacritty"
     mkdir -p "$ALACRITTY_DIR/themes/themes"
@@ -168,7 +168,7 @@ fi
 # STEP 5: Install Starship
 # ============================================
 echo ""
-echo "[5/10] Installing Starship..."
+echo "[5/12] Installing Starship..."
 if ! command -v starship &> /dev/null; then
     if [[ "$OS" == "macos" ]]; then
         brew install starship
@@ -199,7 +199,7 @@ fi
 # STEP 6: Install eza
 # ============================================
 echo ""
-echo "[6/10] Installing eza..."
+echo "[6/12] Installing eza..."
 if ! command -v eza &> /dev/null; then
     if [[ "$OS" == "macos" ]]; then
         brew install eza
@@ -223,7 +223,7 @@ fi
 # STEP 7: Install zoxide
 # ============================================
 echo ""
-echo "[7/10] Installing zoxide..."
+echo "[7/12] Installing zoxide..."
 if ! command -v zoxide &> /dev/null; then
     if [[ "$OS" == "macos" ]]; then
         brew install zoxide
@@ -242,7 +242,7 @@ fi
 # STEP 8: Install atuin (better history)
 # ============================================
 echo ""
-echo "[8/11] Installing atuin..."
+echo "[8/12] Installing atuin..."
 
 # Add atuin bin path for current session (installer installs to ~/.atuin/bin)
 export PATH="$HOME/.atuin/bin:$PATH"
@@ -270,7 +270,7 @@ fi
 # STEP 9: Install tmux
 # ============================================
 echo ""
-echo "[9/11] Installing tmux..."
+echo "[9/12] Installing tmux..."
 if ! command -v tmux &> /dev/null; then
     if [[ "$OS" == "macos" ]]; then
         brew install tmux
@@ -296,47 +296,111 @@ if [ ! -d "$HOME/.tmux/plugins/tpm" ]; then
 fi
 
 # ============================================
-# STEP 10: Configure shell
+# STEP 10: Install zsh plugins (zsh only)
 # ============================================
 echo ""
-echo "[10/11] Configuring shell..."
+echo "[10/12] Installing zsh plugins (syntax-highlighting, autosuggestions)..."
 
-# Detect current shell
 CURRENT_SHELL=$(basename "$SHELL")
+
+if [[ "$CURRENT_SHELL" == "zsh" ]]; then
+    ZSH_PLUGIN_DIR="$HOME/.zsh"
+    mkdir -p "$ZSH_PLUGIN_DIR"
+    
+    # Install zsh-syntax-highlighting
+    if [ ! -d "$ZSH_PLUGIN_DIR/zsh-syntax-highlighting" ]; then
+        git clone https://github.com/zsh-users/zsh-syntax-highlighting.git "$ZSH_PLUGIN_DIR/zsh-syntax-highlighting"
+        print_success "zsh-syntax-highlighting installed"
+    else
+        echo "zsh-syntax-highlighting already installed, skipping..."
+    fi
+    
+    # Install zsh-autosuggestions
+    if [ ! -d "$ZSH_PLUGIN_DIR/zsh-autosuggestions" ]; then
+        git clone https://github.com/zsh-users/zsh-autosuggestions.git "$ZSH_PLUGIN_DIR/zsh-autosuggestions"
+        print_success "zsh-autosuggestions installed"
+    else
+        echo "zsh-autosuggestions already installed, skipping..."
+    fi
+else
+    echo "Skipping (zsh only)..."
+fi
+
+# ============================================
+# STEP 11: Configure shell
+# ============================================
+echo ""
+echo "[11/12] Configuring shell..."
 
 configure_shell() {
     local rc_file=$1
     local init_cmd=$2
     
-    # Backup
-    [ -f "$rc_file" ] && cp "$rc_file" "$rc_file.backup.$(date +%Y%m%d_%H%M%S)"
+    # Ask user if they want to reset the rc file
+    if [ -f "$rc_file" ]; then
+        echo ""
+        read -p "$(echo -e "${YELLOW}[QUESTION]${NC} $rc_file already exists. Reset it? [y/N] ")" -n 1 -r
+        echo ""
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            cp "$rc_file" "$rc_file.backup.$(date +%Y%m%d_%H%M%S)"
+            print_info "Backup created: $rc_file.backup.$(date +%Y%m%d_%H%M%S)"
+            rm "$rc_file"
+            print_info "Resetting $rc_file..."
+        else
+            # Check if already configured
+            if grep -q "starship init" "$rc_file" 2>/dev/null; then
+                echo "Already configured, skipping..."
+                return
+            fi
+            # Backup before appending
+            cp "$rc_file" "$rc_file.backup.$(date +%Y%m%d_%H%M%S)"
+        fi
+    fi
     
-    # Add Starship init
-    if ! grep -q "starship init" "$rc_file" 2>/dev/null; then
-        cat >> "$rc_file" << EOF
+    # Add shell configuration with conditional checks
+    cat >> "$rc_file" << 'EOFSTART'
 
 # ---- Starship ----
-$init_cmd
+EOFSTART
+    echo "$init_cmd" >> "$rc_file"
+    
+    cat >> "$rc_file" << 'EOF'
+
+# ---- Zoxide (only if installed) ----
+if command -v zoxide &> /dev/null; then
+    eval "$(zoxide init zsh)"
+    alias cd="z"
+fi
 
 # ---- Aliases ----
-alias ls="eza --icons=always"
-alias cd="z"
-
-# ---- Zoxide ----
-eval "\$(zoxide init $CURRENT_SHELL)"
+if command -v eza &> /dev/null; then
+    alias ls="eza --icons=always"
+fi
 
 # ---- Atuin (better history) ----
-export PATH="\$HOME/.atuin/bin:\$PATH"
-eval "\$(atuin init $CURRENT_SHELL)"
+export PATH="$HOME/.atuin/bin:$PATH"
+if command -v atuin &> /dev/null; then
+    eval "$(atuin init zsh)"
+fi
 
 # ---- History ----
 HISTSIZE=1000
 SAVEHIST=1000
 EOF
-        print_success "Shell configured: $rc_file"
-    else
-        echo "Already configured, skipping..."
+
+    # Add zsh plugins for zsh
+    if [[ "$CURRENT_SHELL" == "zsh" ]]; then
+        cat >> "$rc_file" << 'EOF'
+
+# ---- Autosuggestions ----
+[ -f "$HOME/.zsh/zsh-autosuggestions/zsh-autosuggestions.zsh" ] && source "$HOME/.zsh/zsh-autosuggestions/zsh-autosuggestions.zsh"
+
+# ---- Syntax Highlighting (must be at the end) ----
+[ -f "$HOME/.zsh/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" ] && source "$HOME/.zsh/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh"
+EOF
     fi
+
+    print_success "Shell configured: $rc_file"
 }
 
 case "$CURRENT_SHELL" in
@@ -348,31 +412,45 @@ case "$CURRENT_SHELL" in
         ;;
     fish)
         mkdir -p "$HOME/.config/fish"
-        if ! grep -q "starship init" "$HOME/.config/fish/config.fish" 2>/dev/null; then
-            cat >> "$HOME/.config/fish/config.fish" << 'EOF'
+        FISH_CONFIG="$HOME/.config/fish/config.fish"
+        
+        if [ -f "$FISH_CONFIG" ]; then
+            echo ""
+            read -p "$(echo -e "${YELLOW}[QUESTION]${NC} $FISH_CONFIG already exists. Reset it? [y/N] ")" -n 1 -r
+            echo ""
+            if [[ $REPLY =~ ^[Yy]$ ]]; then
+                cp "$FISH_CONFIG" "$FISH_CONFIG.backup.$(date +%Y%m%d_%H%M%S)"
+                rm "$FISH_CONFIG"
+            elif grep -q "starship init" "$FISH_CONFIG" 2>/dev/null; then
+                echo "Already configured, skipping..."
+                break
+            fi
+        fi
+        
+        cat >> "$FISH_CONFIG" << 'EOF'
 
 # ---- Starship ----
 starship init fish | source
 
-# ---- Aliases ----
+# ---- Zoxide (must be before alias) ----
+zoxide init fish | source
+
+# ---- Aliases (after zoxide init so 'z' command exists) ----
 alias ls="eza --icons=always"
 alias cd="z"
-
-# ---- Zoxide ----
-zoxide init fish | source
 
 # ---- Atuin ----
 atuin init fish | source
 EOF
-        fi
+        print_success "Shell configured: $FISH_CONFIG"
         ;;
 esac
 
 # ============================================
-# STEP 11: Done
+# STEP 12: Done
 # ============================================
 echo ""
-echo "[11/11] Finishing up..."
+echo "[12/12] Finishing up..."
 
 echo ""
 echo "=============================================="
@@ -387,6 +465,8 @@ echo "  ✓ eza (better ls)"
 echo "  ✓ zoxide (better cd)"
 echo "  ✓ atuin (better history)"
 echo "  ✓ tmux + tpm"
+[[ "$CURRENT_SHELL" == "zsh" ]] && echo "  ✓ zsh-syntax-highlighting"
+[[ "$CURRENT_SHELL" == "zsh" ]] && echo "  ✓ zsh-autosuggestions"
 echo ""
 echo "Config files:"
 echo "  ~/.config/starship.toml"
