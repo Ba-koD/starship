@@ -364,7 +364,33 @@ configure_shell() {
         cat >> "$rc_file" << 'EOF'
 
 # ---- Zsh Completion ----
-autoload -Uz compinit && compinit
+autoload -Uz compinit
+compinit
+
+# Menu selection with arrow keys
+zmodload zsh/complist
+zstyle ':completion:*' menu select
+zstyle ':completion:*' matcher-list 'm:{a-z}={A-Z}'
+zstyle ':completion:*' list-colors ''
+zstyle ':completion:*' special-dirs true
+
+# Arrow key bindings for menu
+bindkey -M menuselect '^[[A' up-line-or-history
+bindkey -M menuselect '^[[B' down-line-or-history
+bindkey -M menuselect '^[[C' forward-char
+bindkey -M menuselect '^[[D' backward-char
+bindkey -M menuselect '^M' .accept-line
+
+# Home/End key bindings
+bindkey '^[[H' beginning-of-line      # Home
+bindkey '^[[F' end-of-line            # End
+bindkey '^[[1~' beginning-of-line     # Home (alternative)
+bindkey '^[[4~' end-of-line           # End (alternative)
+bindkey '^[OH' beginning-of-line      # Home (xterm)
+bindkey '^[OF' end-of-line            # End (xterm)
+
+# Delete key
+bindkey '^[[3~' delete-char
 EOF
         print_info "Added zsh completion to $rc_file"
     fi
