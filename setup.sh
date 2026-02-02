@@ -359,6 +359,16 @@ configure_shell() {
         fi
     fi
     
+    # Add zsh completion if missing (zsh only)
+    if [[ "$CURRENT_SHELL" == "zsh" ]] && ! grep -q "compinit" "$rc_file" 2>/dev/null; then
+        cat >> "$rc_file" << 'EOF'
+
+# ---- Zsh Completion ----
+autoload -Uz compinit && compinit
+EOF
+        print_info "Added zsh completion to $rc_file"
+    fi
+
     # Add full shell configuration if needed
     if [[ "$need_full_config" == true ]]; then
         cat >> "$rc_file" << 'EOFSTART'
