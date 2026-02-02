@@ -335,6 +335,7 @@ echo "[11/12] Configuring shell..."
 configure_shell() {
     local rc_file=$1
     local init_cmd=$2
+    local need_full_config=true
     
     # Ask user if they want to reset the rc file
     if [ -f "$rc_file" ]; then
@@ -347,24 +348,26 @@ configure_shell() {
             rm "$rc_file"
             print_info "Resetting $rc_file..."
         else
-            # Check if already configured
-            if grep -q "starship init" "$rc_file" 2>/dev/null; then
-                echo "Already configured, skipping..."
-                return
-            fi
-            # Backup before appending
+            # Backup before modifying
             cp "$rc_file" "$rc_file.backup.$(date +%Y%m%d_%H%M%S)"
+            
+            # Check if starship already configured
+            if grep -q "starship init" "$rc_file" 2>/dev/null; then
+                need_full_config=false
+                print_info "Starship already configured"
+            fi
         fi
     fi
     
-    # Add shell configuration with conditional checks
-    cat >> "$rc_file" << 'EOFSTART'
+    # Add full shell configuration if needed
+    if [[ "$need_full_config" == true ]]; then
+        cat >> "$rc_file" << 'EOFSTART'
 
 # ---- Starship ----
 EOFSTART
-    echo "$init_cmd" >> "$rc_file"
-    
-    cat >> "$rc_file" << 'EOF'
+        echo "$init_cmd" >> "$rc_file"
+        
+        cat >> "$rc_file" << 'EOF'
 
 # ---- Zoxide (only if installed) ----
 if command -v zoxide &> /dev/null; then
@@ -387,17 +390,29 @@ fi
 HISTSIZE=1000
 SAVEHIST=1000
 EOF
+    fi
 
-    # Add zsh plugins for zsh
+    # Add zsh plugins for zsh (always check and add if missing)
     if [[ "$CURRENT_SHELL" == "zsh" ]]; then
-        cat >> "$rc_file" << 'EOF'
+        # Check if autosuggestions already configured
+        if ! grep -q "zsh-autosuggestions.zsh" "$rc_file" 2>/dev/null; then
+            cat >> "$rc_file" << 'EOF'
 
 # ---- Autosuggestions ----
 [ -f "$HOME/.zsh/zsh-autosuggestions/zsh-autosuggestions.zsh" ] && source "$HOME/.zsh/zsh-autosuggestions/zsh-autosuggestions.zsh"
+EOF
+            print_info "Added zsh-autosuggestions to $rc_file"
+        fi
+        
+        # Check if syntax-highlighting already configured
+        if ! grep -q "zsh-syntax-highlighting.zsh" "$rc_file" 2>/dev/null; then
+            cat >> "$rc_file" << 'EOF'
 
 # ---- Syntax Highlighting (must be at the end) ----
 [ -f "$HOME/.zsh/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" ] && source "$HOME/.zsh/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh"
 EOF
+            print_info "Added zsh-syntax-highlighting to $rc_file"
+        fi
     fi
 
     print_success "Shell configured: $rc_file"
