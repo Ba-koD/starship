@@ -51,18 +51,6 @@ OS=$(detect_os)
 [[ "$OS" == "linux" ]] && DISTRO=$(detect_linux_distro)
 
 echo ""
-echo "=============================================="
-echo "  Starship Setup Script"
-echo "=============================================="
-echo ""
-print_info "Detected OS: $OS"
-[[ "$OS" == "linux" ]] && print_info "Detected distro: $DISTRO"
-echo ""
-
-read -p "Proceed with installation? [Y/n] " -n 1 -r
-echo ""
-[[ ! $REPLY =~ ^[Yy]$ ]] && [[ ! -z $REPLY ]] && exit 0
-
 # ============================================
 # STEP 1: Package manager setup
 # ============================================
@@ -83,28 +71,50 @@ elif [[ "$OS" == "linux" ]]; then
         fedora) sudo dnf check-update || true ;;
     esac
 fi
-
 # ============================================
-# STEP 2: Install FiraCode Nerd Font
+# STEP 2: Install D2Coding Nerd Font Mono
 # ============================================
 echo ""
-echo "[2/12] Installing FiraCode Nerd Font..."
-if [[ "$OS" == "macos" ]]; then
-    if ! brew list font-fira-code-nerd-font &> /dev/null 2>&1; then
-        brew tap homebrew/cask-fonts 2>/dev/null || true
-        brew install --cask font-fira-code-nerd-font
+echo "[2/12] Installing D2Coding Nerd Font Mono..."
+# Use direct download from Nerd Fonts releases to ensure Mono variant is available
+if [[ "${OS}" == "macos" ]]; then
+    # macOS fonts go to ~/Library/Fonts
+    DEST_DIR="$HOME/Library/Fonts"
+    if [ ! -d "$DEST_DIR" ]; then
+        mkdir -p "$DEST_DIR"
+    fi
+    if ! fc-list 2>/dev/null | grep -qi "D2Coding.*Nerd" && [ -z "$(ls "$DEST_DIR" 2>/dev/null | grep -i d2coding || true)" ]; then
+        temp_dir=$(mktemp -d)
+        curl -fLo "$temp_dir/D2Coding.zip" \
+            "https://github.com/ryanoasis/nerd-fonts/releases/latest/download/D2Coding.zip"
+        unzip -q "$temp_dir/D2Coding.zip" -d "$temp_dir"
+        # Prefer Mono variants; fallback to any ttf if Mono not found
+        if find "$temp_dir" -iname '*mono*.ttf' | grep -q .; then
+            find "$temp_dir" -iname '*mono*.ttf' -exec cp {} "$DEST_DIR/" \;
+        else
+            find "$temp_dir" -iname '*.ttf' -exec cp {} "$DEST_DIR/" \;
+        fi
+        rm -rf "$temp_dir"
+        print_success "D2Coding Nerd Font Mono installed to $DEST_DIR"
     else
         echo "Already installed, skipping..."
     fi
-elif [[ "$OS" == "linux" ]]; then
-    if ! fc-list | grep -qi "FiraCode.*Nerd" 2>/dev/null; then
-        mkdir -p "$HOME/.local/share/fonts"
+elif [[ "${OS}" == "linux" ]]; then
+    DEST_DIR="$HOME/.local/share/fonts"
+    mkdir -p "$DEST_DIR"
+    if ! fc-list 2>/dev/null | grep -qi "D2Coding.*Nerd"; then
         temp_dir=$(mktemp -d)
-        curl -fLo "$temp_dir/FiraCode.zip" \
-            "https://github.com/ryanoasis/nerd-fonts/releases/latest/download/FiraCode.zip"
-        unzip -q "$temp_dir/FiraCode.zip" -d "$HOME/.local/share/fonts/FiraCodeNerdFont"
-        fc-cache -f -v > /dev/null 2>&1
+        curl -fLo "$temp_dir/D2Coding.zip" \
+            "https://github.com/ryanoasis/nerd-fonts/releases/latest/download/D2Coding.zip"
+        unzip -q "$temp_dir/D2Coding.zip" -d "$temp_dir"
+        if find "$temp_dir" -iname '*mono*.ttf' | grep -q .; then
+            find "$temp_dir" -iname '*mono*.ttf' -exec cp {} "$DEST_DIR/" \;
+        else
+            find "$temp_dir" -iname '*.ttf' -exec cp {} "$DEST_DIR/" \;
+        fi
+        fc-cache -f -v > /dev/null 2>&1 || true
         rm -rf "$temp_dir"
+        print_success "D2Coding Nerd Font Mono installed to $DEST_DIR"
     else
         echo "Already installed, skipping..."
     fi
@@ -156,7 +166,7 @@ blur = true
 option_as_alt = "Both"
 
 [font]
-normal = { family = "FiraCode Nerd Font", style = "Regular" }
+normal = { family = "D2Coding Nerd Font Mono", style = "Regular" }
 size = 18
 EOF
     fi
@@ -509,7 +519,7 @@ echo -e "${GREEN}Setup Complete!${NC}"
 echo "=============================================="
 echo ""
 echo "Installed:"
-echo "  ✓ FiraCode Nerd Font"
+echo "  ✓ D2Coding Nerd Font Mono"
 [[ "$OS" == "macos" ]] && echo "  ✓ Alacritty (with coolnight theme)"
 echo "  ✓ Starship (Bracketed Segments preset)"
 echo "  ✓ eza (better ls)"
@@ -526,7 +536,7 @@ echo "  ~/.tmux.conf"
 echo ""
 echo "Next steps:"
 echo "  1. Restart terminal or: exec $CURRENT_SHELL"
-[[ "$OS" != "macos" ]] && echo "  2. Set terminal font to 'FiraCode Nerd Font'"
+[[ "$OS" != "macos" ]] && echo "  2. Set terminal font to 'D2Coding Nerd Font Mono'"
 echo "  3. In tmux: prefix + Shift-I to install plugins"
 echo ""
 echo "Customize: https://starship.rs/config/"
