@@ -113,6 +113,30 @@ verify_required_tools() {
     fi
 }
 
+ensure_zsh_login_shell() {
+    [[ "$OS" == "linux" ]] || return 0
+
+    local zsh_path
+    local login_shell
+
+    zsh_path="$(command -v zsh)"
+    login_shell="$(getent passwd "$USER" 2>/dev/null | cut -d: -f7)"
+    if [[ -z "$login_shell" ]]; then
+        print_error "Could not determine the login shell for $USER"
+        exit 1
+    fi
+    if [[ "$login_shell" == "$zsh_path" ]]; then
+        return 0
+    fi
+
+    if [[ "$(id -u)" -eq 0 ]]; then
+        chsh -s "$zsh_path" "$USER"
+    else
+        sudo chsh -s "$zsh_path" "$USER"
+    fi
+    print_success "Set the login shell for $USER to $zsh_path"
+}
+
 echo ""
 # ============================================
 # STEP 1: Package manager setup
@@ -377,6 +401,10 @@ echo ""
 echo "[10/12] Installing zsh plugins (syntax-highlighting, autosuggestions)..."
 
 CURRENT_SHELL=$(basename "$SHELL")
+if [[ "$OS" == "linux" ]]; then
+    ensure_zsh_login_shell
+    CURRENT_SHELL="zsh"
+fi
 
 if [[ "$CURRENT_SHELL" == "zsh" ]]; then
     ZSH_PLUGIN_DIR="$HOME/.zsh"
