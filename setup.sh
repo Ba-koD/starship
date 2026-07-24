@@ -347,26 +347,10 @@ configure_shell() {
     local init_cmd=$2
     local need_full_config=true
     
-    # Ask user if they want to reset the rc file
-    if [ -f "$rc_file" ]; then
-        echo ""
-        read -p "$(echo -e "${YELLOW}[QUESTION]${NC} $rc_file already exists. Reset it? [y/N] ")" -n 1 -r
-        echo ""
-        if [[ $REPLY =~ ^[Yy]$ ]]; then
-            cp "$rc_file" "$rc_file.backup.$(date +%Y%m%d_%H%M%S)"
-            print_info "Backup created: $rc_file.backup.$(date +%Y%m%d_%H%M%S)"
-            rm "$rc_file"
-            print_info "Resetting $rc_file..."
-        else
-            # Backup before modifying
-            cp "$rc_file" "$rc_file.backup.$(date +%Y%m%d_%H%M%S)"
-            
-            # Check if starship already configured
-            if grep -q "starship init" "$rc_file" 2>/dev/null; then
-                need_full_config=false
-                print_info "Starship already configured"
-            fi
-        fi
+    # Existing shell settings are never reset, removed, or replaced.
+    if [ -f "$rc_file" ] && grep -q "starship init" "$rc_file" 2>/dev/null; then
+        need_full_config=false
+        print_info "Starship already configured; preserving existing shell settings"
     fi
     
     # Add zsh completion if missing (zsh only)
@@ -475,20 +459,10 @@ case "$CURRENT_SHELL" in
         mkdir -p "$HOME/.config/fish"
         FISH_CONFIG="$HOME/.config/fish/config.fish"
         
-        if [ -f "$FISH_CONFIG" ]; then
-            echo ""
-            read -p "$(echo -e "${YELLOW}[QUESTION]${NC} $FISH_CONFIG already exists. Reset it? [y/N] ")" -n 1 -r
-            echo ""
-            if [[ $REPLY =~ ^[Yy]$ ]]; then
-                cp "$FISH_CONFIG" "$FISH_CONFIG.backup.$(date +%Y%m%d_%H%M%S)"
-                rm "$FISH_CONFIG"
-            elif grep -q "starship init" "$FISH_CONFIG" 2>/dev/null; then
-                echo "Already configured, skipping..."
-                break
-            fi
-        fi
-        
-        cat >> "$FISH_CONFIG" << 'EOF'
+        if [ -f "$FISH_CONFIG" ] && grep -q "starship init" "$FISH_CONFIG" 2>/dev/null; then
+            print_info "Starship already configured; preserving existing shell settings"
+        else
+            cat >> "$FISH_CONFIG" << 'EOF'
 
 # ---- Starship ----
 starship init fish | source
@@ -503,7 +477,8 @@ alias cd="z"
 # ---- Atuin ----
 atuin init fish | source
 EOF
-        print_success "Shell configured: $FISH_CONFIG"
+            print_success "Shell configured: $FISH_CONFIG"
+        fi
         ;;
 esac
 
