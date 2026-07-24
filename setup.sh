@@ -55,16 +55,16 @@ install_required_tools() {
 
     case "$DISTRO" in
         ubuntu|debian|pop|linuxmint)
-            sudo apt install -y curl unzip fontconfig git ca-certificates
+            sudo apt install -y curl unzip fontconfig git ca-certificates zsh tar gzip
             ;;
         arch|manjaro|endeavouros)
-            sudo pacman -S --needed --noconfirm curl unzip fontconfig git ca-certificates
+            sudo pacman -S --needed --noconfirm curl unzip fontconfig git ca-certificates zsh tar gzip
             ;;
         fedora)
-            sudo dnf install -y curl unzip fontconfig git ca-certificates
+            sudo dnf install -y curl unzip fontconfig git ca-certificates zsh tar gzip
             ;;
         *)
-            print_warning "Install curl, unzip, fontconfig, git, and ca-certificates before continuing."
+            print_warning "Install curl, unzip, fontconfig, git, ca-certificates, zsh, tar, and gzip before continuing."
             ;;
     esac
 }

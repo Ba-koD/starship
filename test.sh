@@ -31,7 +31,9 @@ grep -F 'install_required_tools' "$SETUP" >/dev/null || \
   fail 'installer must install required tools before configuring fonts'
 grep -F 'unzip' "$SETUP" >/dev/null || \
   fail 'installer must install unzip before extracting fonts'
-grep -F 'automatically installs curl, unzip, fontconfig, git, and ca-certificates' "$README" >/dev/null || \
+grep -F 'curl unzip fontconfig git ca-certificates zsh tar gzip' "$SETUP" >/dev/null || \
+  fail 'installer must install shell and archive dependencies before configuring tools'
+grep -F 'automatically installs curl, unzip, fontconfig, git, ca-certificates, zsh, tar, and gzip' "$README" >/dev/null || \
   fail 'README must document required tool installation'
 grep -F 'repair_bash_shell_init' "$SETUP" >/dev/null || \
   fail 'installer must repair its previous Bash initialization'
