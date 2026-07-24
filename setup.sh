@@ -53,20 +53,64 @@ OS=$(detect_os)
 install_required_tools() {
     [[ "$OS" == "linux" ]] || return 0
 
+    local packages="curl unzip fontconfig git ca-certificates zsh tar gzip"
+
     case "$DISTRO" in
         ubuntu|debian|pop|linuxmint)
-            sudo apt install -y curl unzip fontconfig git ca-certificates zsh tar gzip
+            sudo apt install -y $packages
             ;;
         arch|manjaro|endeavouros)
-            sudo pacman -S --needed --noconfirm curl unzip fontconfig git ca-certificates zsh tar gzip
+            sudo pacman -S --needed --noconfirm $packages
             ;;
         fedora)
-            sudo dnf install -y curl unzip fontconfig git ca-certificates zsh tar gzip
+            sudo dnf install -y $packages
+            ;;
+        rhel|centos|rocky|almalinux)
+            if command -v dnf >/dev/null 2>&1; then
+                sudo dnf install -y $packages
+            else
+                sudo yum install -y $packages
+            fi
+            ;;
+        opensuse*|sles)
+            sudo zypper --non-interactive install $packages
+            ;;
+        alpine)
+            sudo apk add --no-cache $packages
             ;;
         *)
-            print_warning "Install curl, unzip, fontconfig, git, ca-certificates, zsh, tar, and gzip before continuing."
+            if command -v apt-get >/dev/null 2>&1; then
+                sudo apt-get install -y $packages
+            elif command -v pacman >/dev/null 2>&1; then
+                sudo pacman -S --needed --noconfirm $packages
+            elif command -v dnf >/dev/null 2>&1; then
+                sudo dnf install -y $packages
+            elif command -v yum >/dev/null 2>&1; then
+                sudo yum install -y $packages
+            elif command -v zypper >/dev/null 2>&1; then
+                sudo zypper --non-interactive install $packages
+            elif command -v apk >/dev/null 2>&1; then
+                sudo apk add --no-cache $packages
+            else
+                print_warning "Install curl, unzip, fontconfig, git, ca-certificates, zsh, tar, and gzip before continuing."
+            fi
             ;;
     esac
+}
+
+verify_required_tools() {
+    [[ "$OS" == "linux" ]] || return 0
+
+    local tool
+    local missing_tools=""
+    for tool in curl unzip fc-cache git zsh tar gzip; do
+        command -v "$tool" >/dev/null 2>&1 || missing_tools="$missing_tools $tool"
+    done
+
+    if [[ -n "$missing_tools" ]]; then
+        print_error "Missing required tools:$missing_tools"
+        exit 1
+    fi
 }
 
 echo ""
@@ -91,6 +135,7 @@ elif [[ "$OS" == "linux" ]]; then
     esac
 fi
 install_required_tools
+verify_required_tools
 # ============================================
 # STEP 2: Install D2Coding Nerd Font Mono
 # ============================================

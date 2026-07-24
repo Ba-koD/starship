@@ -33,6 +33,12 @@ grep -F 'unzip' "$SETUP" >/dev/null || \
   fail 'installer must install unzip before extracting fonts'
 grep -F 'curl unzip fontconfig git ca-certificates zsh tar gzip' "$SETUP" >/dev/null || \
   fail 'installer must install shell and archive dependencies before configuring tools'
+grep -F 'verify_required_tools' "$SETUP" >/dev/null || \
+  fail 'installer must verify required commands after package installation'
+for package_manager in yum zypper apk; do
+  grep -F "$package_manager" "$SETUP" >/dev/null || \
+    fail "installer must support the $package_manager package manager"
+done
 grep -F 'automatically installs curl, unzip, fontconfig, git, ca-certificates, zsh, tar, and gzip' "$README" >/dev/null || \
   fail 'README must document required tool installation'
 grep -F 'repair_bash_shell_init' "$SETUP" >/dev/null || \
