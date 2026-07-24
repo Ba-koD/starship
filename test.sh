@@ -27,4 +27,11 @@ grep -F 'Starship already configured; preserving existing shell settings' "$SETU
 grep -F 'git clone https://git.intp.me/rudgh/starship.git' "$README" >/dev/null || \
   fail 'README must provide a one-command install from git.intp.me'
 
+grep -F 'install_required_tools' "$SETUP" >/dev/null || \
+  fail 'installer must install required tools before configuring fonts'
+grep -F 'unzip' "$SETUP" >/dev/null || \
+  fail 'installer must install unzip before extracting fonts'
+grep -F 'automatically installs curl, unzip, fontconfig, git, and ca-certificates' "$README" >/dev/null || \
+  fail 'README must document required tool installation'
+
 printf 'PASS: shell configuration is non-destructive\n'

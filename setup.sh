@@ -50,6 +50,25 @@ detect_linux_distro() {
 OS=$(detect_os)
 [[ "$OS" == "linux" ]] && DISTRO=$(detect_linux_distro)
 
+install_required_tools() {
+    [[ "$OS" == "linux" ]] || return 0
+
+    case "$DISTRO" in
+        ubuntu|debian|pop|linuxmint)
+            sudo apt install -y curl unzip fontconfig git ca-certificates
+            ;;
+        arch|manjaro|endeavouros)
+            sudo pacman -S --needed --noconfirm curl unzip fontconfig git ca-certificates
+            ;;
+        fedora)
+            sudo dnf install -y curl unzip fontconfig git ca-certificates
+            ;;
+        *)
+            print_warning "Install curl, unzip, fontconfig, git, and ca-certificates before continuing."
+            ;;
+    esac
+}
+
 echo ""
 # ============================================
 # STEP 1: Package manager setup
@@ -71,6 +90,7 @@ elif [[ "$OS" == "linux" ]]; then
         fedora) sudo dnf check-update || true ;;
     esac
 fi
+install_required_tools
 # ============================================
 # STEP 2: Install D2Coding Nerd Font Mono
 # ============================================

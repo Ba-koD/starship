@@ -11,3 +11,5 @@ git clone https://git.intp.me/rudgh/starship.git && bash starship/setup.sh
 ```
 
 The installer uses the current login shell (`zsh`, `bash`, or `fish`). It never resets, deletes, or replaces an existing shell configuration file. If that file already initializes Starship, it is left unchanged.
+
+On supported Linux distributions, it automatically installs curl, unzip, fontconfig, git, and ca-certificates before downloading and extracting the Nerd Font. This may request your sudo password.
