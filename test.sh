@@ -33,5 +33,11 @@ grep -F 'unzip' "$SETUP" >/dev/null || \
   fail 'installer must install unzip before extracting fonts'
 grep -F 'automatically installs curl, unzip, fontconfig, git, and ca-certificates' "$README" >/dev/null || \
   fail 'README must document required tool installation'
+grep -F 'repair_bash_shell_init' "$SETUP" >/dev/null || \
+  fail 'installer must repair its previous Bash initialization'
+grep -F 'zoxide init %s' "$SETUP" >/dev/null || \
+  fail 'installer must initialize zoxide for the configured shell'
+grep -F 'atuin init %s' "$SETUP" >/dev/null || \
+  fail 'installer must initialize atuin for the configured shell'
 
 printf 'PASS: shell configuration is non-destructive\n'

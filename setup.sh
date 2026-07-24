@@ -365,6 +365,7 @@ echo "[11/12] Configuring shell..."
 configure_shell() {
     local rc_file=$1
     local init_cmd=$2
+    local shell_name=$3
     local need_full_config=true
     
     # Existing shell settings are never reset, removed, or replaced.
@@ -421,7 +422,9 @@ EOFSTART
 
 # ---- Zoxide (only if installed) ----
 if command -v zoxide &> /dev/null; then
-    eval "$(zoxide init zsh)"
+EOF
+        printf '    eval "$(zoxide init %s)"\n' "$shell_name" >> "$rc_file"
+        cat >> "$rc_file" << 'EOF'
     alias cd="z"
 fi
 
@@ -433,7 +436,9 @@ fi
 # ---- Atuin (better history) ----
 export PATH="$HOME/.atuin/bin:$PATH"
 if command -v atuin &> /dev/null; then
-    eval "$(atuin init zsh)"
+EOF
+        printf '    eval "$(atuin init %s)"\n' "$shell_name" >> "$rc_file"
+        cat >> "$rc_file" << 'EOF'
 fi
 
 # ---- History ----
@@ -468,12 +473,30 @@ EOF
     print_success "Shell configured: $rc_file"
 }
 
+repair_bash_shell_init() {
+    local rc_file=$1
+    local temp_file
+
+    [ -f "$rc_file" ] || return 0
+    temp_file=$(mktemp)
+    sed \
+        -e 's/zoxide init zsh/zoxide init bash/g' \
+        -e 's/atuin init zsh/atuin init bash/g' \
+        "$rc_file" > "$temp_file"
+    if ! cmp -s "$rc_file" "$temp_file"; then
+        cat "$temp_file" > "$rc_file"
+        print_info "Updated generated zsh initializers in $rc_file for Bash"
+    fi
+    rm -f "$temp_file"
+}
+
 case "$CURRENT_SHELL" in
     zsh)
-        configure_shell "$HOME/.zshrc" 'eval "$(starship init zsh)"'
+        configure_shell "$HOME/.zshrc" 'eval "$(starship init zsh)"' zsh
         ;;
     bash)
-        configure_shell "$HOME/.bashrc" 'eval "$(starship init bash)"'
+        repair_bash_shell_init "$HOME/.bashrc"
+        configure_shell "$HOME/.bashrc" 'eval "$(starship init bash)"' bash
         ;;
     fish)
         mkdir -p "$HOME/.config/fish"
